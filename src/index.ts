@@ -1,14 +1,10 @@
-import { Effect, Option, pipe, Stream, Chunk, StreamEmit, Exit } from "effect";
+import { Effect, Option, pipe, Stream, Chunk, StreamEmit } from "effect";
 import { Schema } from "@effect/schema";
 import {
   FetchHttpClient,
   HttpClient,
   HttpClientResponse,
 } from "@effect/platform";
-
-(window as any)[`Effect`] = Effect;
-(window as any)[`pipe`] = pipe;
-(window as any)[`Exit`] = Exit;
 
 const CityResult = Schema.Struct({
   name: Schema.String,
