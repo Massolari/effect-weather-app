@@ -1,4 +1,4 @@
-import { Effect, Option, pipe, Stream, Chunk, StreamEmit } from "effect";
+import { Effect, Array, Option, pipe, Stream, Chunk, StreamEmit } from "effect";
 import { Schema } from "@effect/schema";
 import {
   FetchHttpClient,
@@ -95,17 +95,28 @@ Option.map(city, (cityEl) => {
 });
 
 const getCity = (city: string) =>
-  Effect.gen(function* () {
-    const geocoding = yield* pipe(
-      getRequest(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=10&language=en&format=json`,
-      ),
-      Effect.andThen(HttpClientResponse.schemaBodyJson(GeocodingResponse)),
-      Effect.orElseSucceed<GeocodingResponse>(() => ({ results: [] })),
-    );
-
-    return geocoding.results;
-  }).pipe(Effect.scoped);
+  // Effect.gen(function* () {
+  //   const response = yield* getRequest(
+  //     `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=10&language=en&format=json`,
+  //   );
+  //
+  //   const geocoding = yield* pipe(
+  //     response,
+  //     HttpClientResponse.schemaBodyJson(GeocodingResponse), // Validate the response against the schema, it adds the `ParseResult.ParseError` to the `Error` type of the effect
+  //     Effect.orElseSucceed<GeocodingResponse>(() => ({ results: [] })), // If the effect is in a failure state, we can provide a default value to turn the effect into a success state
+  //   );
+  //
+  //   return geocoding.results;
+  // }).pipe(Effect.scoped);
+  pipe(
+    getRequest(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=10&language=en&format=json`,
+    ),
+    Effect.andThen(HttpClientResponse.schemaBodyJson(GeocodingResponse)),
+    Effect.orElseSucceed<GeocodingResponse>(() => ({ results: [] })),
+    Effect.map((geocoding) => geocoding.results),
+    Effect.scoped,
+  );
 
 const renderCity = (cities: readonly CityResult[]) => {
   // If there are multiple cities, populate the suggestions
@@ -117,8 +128,7 @@ const renderCity = (cities: readonly CityResult[]) => {
   // We didn't get into the if statement above, so we have only one city or none
   // Let's try to get the first city
   pipe(
-    cities.at(0),
-    Option.fromNullable,
+    Array.head(cities),
     Option.match({
       onSome: selectCity,
       onNone: () => {
@@ -169,19 +179,17 @@ const selectCity = (result: CityResult) =>
   );
 
 const getWeather = (result: CityResult) =>
-  Effect.gen(function* () {
-    const response = yield* getRequest(
+  pipe(
+    getRequest(
       `https://api.open-meteo.com/v1/forecast?latitude=${result.latitude}&longitude=${result.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation&timezone=auto&forecast_days=1`,
-    );
-
-    return yield* HttpClientResponse.schemaBodyJson(Weather)(response);
-  }).pipe(Effect.scoped, Effect.provide(FetchHttpClient.layer));
-// Alternative syntax
-// pipe(
-//   getRequest(
+    ),
+    Effect.andThen(HttpClientResponse.schemaBodyJson(Weather)),
+    Effect.scoped,
+  );
+// Effect.gen(function* () {
+//   const response = yield* getRequest(
 //     `https://api.open-meteo.com/v1/forecast?latitude=${result.latitude}&longitude=${result.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation&timezone=auto&forecast_days=1`,
-//   ),
-//   Effect.andThen(HttpClientResponse.schemaBodyJson(Weather)),
-//   Effect.scoped,
-//   Effect.provide(FetchHttpClient.layer),
-// );
+//   );
+//
+//   return yield* HttpClientResponse.schemaBodyJson(Weather)(response);
+// }).pipe(Effect.scoped, Effect.provide(FetchHttpClient.layer));
