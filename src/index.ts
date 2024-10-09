@@ -1,124 +1,89 @@
-import { Effect, Array, Option, pipe, Stream, Chunk, StreamEmit } from "effect";
-import { Schema } from "@effect/schema";
-import {
-  FetchHttpClient,
-  HttpClient,
-  HttpClientResponse,
-} from "@effect/platform";
-
-const CityResult = Schema.Struct({
-  name: Schema.String,
-  country_code: Schema.String,
-  latitude: Schema.Number,
-  longitude: Schema.Number,
-});
-
-type CityResult = Schema.Schema.Type<typeof CityResult>;
-
-const GeocodingResponse = Schema.Struct({
-  results: Schema.Array(CityResult),
-});
-
-type GeocodingResponse = Schema.Schema.Type<typeof GeocodingResponse>;
-
-const Weather = Schema.Struct({
-  current_units: Schema.Struct({
-    temperature_2m: Schema.String,
-    relative_humidity_2m: Schema.String,
-    apparent_temperature: Schema.String,
-    precipitation: Schema.String,
-  }),
-  current: Schema.Struct({
-    temperature_2m: Schema.Number,
-    relative_humidity_2m: Schema.Number,
-    apparent_temperature: Schema.Number,
-    precipitation: Schema.Number,
-  }),
-});
-
-type Weather = Schema.Schema.Type<typeof Weather>;
-
-// The field input
-const city = Option.fromNullable(
-  document.querySelector<HTMLInputElement>("#city"),
-);
-// The list of suggestions
-const cities = Option.fromNullable(
-  document.querySelector<HTMLUListElement>("#cities"),
-);
-// The weather information
-const weather = Option.fromNullable(
-  document.querySelector<HTMLDivElement>("#weather"),
-);
-
-const getRequest = (url: string) =>
-  // Effect.gen(function* () {
-  //   const client = yield* HttpClient.HttpClient;
-  //
-  //   return yield* pipe(
-  //     client.get(url),
-  //     HttpClient.withTracerPropagation(false),
-  //   );
-  // }).pipe(Effect.provide(FetchHttpClient.layer));
-  pipe(
-    HttpClient.HttpClient,
-    Effect.andThen((client) => client.get(url)),
-    HttpClient.withTracerPropagation(false),
-    Effect.provide(FetchHttpClient.layer),
-  );
-
-const getCities = function (search: string) {
-  Option.map(cities, (c) => (c.innerHTML = ""));
-
-  return pipe(
-    getCity(search),
-    Effect.map(renderCity),
-    // Check if the input is empty
-    Effect.when(() => Boolean(search)),
-  );
+type GeocodingResponse = {
+  results: CityResult[];
 };
 
-Option.map(city, (cityEl) => {
-  const stream = Stream.async(
-    (emit: StreamEmit.Emit<never, never, string, void>) =>
-      cityEl.addEventListener("input", function (_event) {
-        emit(Effect.succeed(Chunk.of(this.value)));
-      }),
-  );
+type CityResult = {
+  name: string;
+  country_code: string;
+  latitude: number;
+  longitude: number;
+};
 
-  pipe(
-    stream,
-    Stream.debounce(500),
-    Stream.runForEach(getCities),
-    Effect.runPromise,
-  );
+type WeatherResult =
+  | { tag: "ok"; value: Weather }
+  | { tag: "error"; value: unknown };
+
+type Weather = {
+  current_units: {
+    temperature_2m: string;
+    relative_humidity_2m: string;
+    apparent_temperature: string;
+    precipitation: string;
+  };
+  current: {
+    temperature_2m: number;
+    relative_humidity_2m: number;
+    apparent_temperature: number;
+    precipitation: number;
+  };
+};
+
+// The field input
+const city = document.querySelector<HTMLInputElement>("#city");
+// The list of suggestions
+const cities = document.querySelector<HTMLUListElement>("#cities");
+// The weather information
+const weather = document.querySelector<HTMLDivElement>("#weather");
+
+const debounce = (fn: Function, delay: number) => {
+  let timeoutId: number;
+
+  return function (...args: any[]) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+};
+
+const getCities = debounce(async function (input: HTMLInputElement) {
+  const { value } = input;
+
+  // Check if the HTML element exists
+  if (cities) {
+    // Clear the list of suggestions
+    cities.innerHTML = "";
+  }
+
+  // Check if the input is empty
+  if (!value) {
+    return;
+  }
+
+  // Fetch the cities
+  const results = await getCity(value);
+
+  renderCity(results);
+}, 500);
+
+city?.addEventListener("input", function (_event) {
+  getCities(this);
 });
 
-const getCity = (city: string) =>
-  // Effect.gen(function* () {
-  //   const response = yield* getRequest(
-  //     `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=10&language=en&format=json`,
-  //   );
-  //
-  //   const geocoding = yield* pipe(
-  //     response,
-  //     HttpClientResponse.schemaBodyJson(GeocodingResponse), // Validate the response against the schema, it adds the `ParseResult.ParseError` to the `Error` type of the effect
-  //     Effect.orElseSucceed<GeocodingResponse>(() => ({ results: [] })), // If the effect is in a failure state, we can provide a default value to turn the effect into a success state
-  //   );
-  //
-  //   return geocoding.results;
-  // }).pipe(Effect.scoped);
-  pipe(
-    getRequest(
+const getCity = async (city: string): Promise<CityResult[]> => {
+  try {
+    const response = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=10&language=en&format=json`,
-    ),
-    Effect.andThen(HttpClientResponse.schemaBodyJson(GeocodingResponse)),
-    Effect.orElseSucceed<GeocodingResponse>(() => ({ results: [] })),
-    Effect.map((geocoding) => geocoding.results),
-    Effect.scoped,
-  );
+    );
 
-const renderCity = (cities: readonly CityResult[]) => {
+    const geocoding: GeocodingResponse = await response.json();
+
+    return geocoding.results;
+  } catch (error) {
+    console.error("Error:", error);
+    return [];
+  }
+};
+
+const renderCity = (cities: CityResult[]) => {
   // If there are multiple cities, populate the suggestions
   if (cities.length > 1) {
     populateSuggestions(cities);
@@ -127,69 +92,64 @@ const renderCity = (cities: readonly CityResult[]) => {
 
   // We didn't get into the if statement above, so we have only one city or none
   // Let's try to get the first city
-  pipe(
-    Array.head(cities),
-    Option.match({
-      onSome: selectCity,
-      onNone: () => {
-        const search = Option.match(city, {
-          onSome: (cityEl) => cityEl.value,
-          onNone: () => "searched",
-        });
+  const cityResult = cities.at(0);
 
-        Option.map(
-          weather,
-          (weatherEl) =>
-            (weatherEl.innerHTML = `<p>City ${search} not found</p>`),
-        );
-      },
-    }),
-  );
+  // If don't have a city, display an error message
+  if (!cityResult) {
+    if (weather) {
+      const search = city?.value || "searched";
+      weather.innerHTML = `<p>City ${search} not found</p>`;
+    }
+    return;
+  }
+
+  // Fetch the weather for the selected city
+  selectCity(cityResult);
 };
 
-const populateSuggestions = (results: readonly CityResult[]) =>
-  Option.map(cities, (citiesEl) =>
-    results.forEach((city) => {
-      const li = document.createElement("li");
-      li.innerText = `${city.name} - ${city.country_code}`;
-      li.addEventListener("click", () => selectCity(city));
-      citiesEl.appendChild(li);
-    }),
-  );
+const populateSuggestions = (results: CityResult[]) =>
+  results.forEach((city) => {
+    const li = document.createElement("li");
+    li.innerText = `${city.name} - ${city.country_code}`;
+    li.addEventListener("click", () => selectCity(city));
+    cities?.appendChild(li);
+  });
 
-const selectCity = (result: CityResult) =>
-  Option.map(weather, (weatherEl) =>
-    pipe(
-      result,
-      getWeather,
-      Effect.match({
-        onFailure: (error) =>
-          (weatherEl.innerHTML = `<p>An error occurred while fetching the weather: ${error}</p>`),
-        onSuccess: (weatherData: Weather) =>
-          (weatherEl.innerHTML = `
-<h2>${result.name}</h2>
-<p>Temperature: ${weatherData.current.temperature_2m}°C</p>
-<p>Feels like: ${weatherData.current.apparent_temperature}°C</p>
-<p>Humidity: ${weatherData.current.relative_humidity_2m}%</p>
-<p>Precipitation: ${weatherData.current.precipitation}mm</p>
-`),
-      }),
-      Effect.runPromise,
-    ),
-  );
+const selectCity = async (result: CityResult) => {
+  // If the HTML element doesn't exist, return
+  if (!weather) {
+    return;
+  }
 
-const getWeather = (result: CityResult) =>
-  pipe(
-    getRequest(
+  try {
+    const data = await getWeather(result);
+
+    if (data.tag === "error") {
+      throw data.value;
+    }
+
+    weather.innerHTML = `
+ <h2>${result.name}</h2>
+ <p>Temperature: ${data.value.current.temperature_2m}°C</p>
+ <p>Feels like: ${data.value.current.apparent_temperature}°C</p>
+ <p>Humidity: ${data.value.current.relative_humidity_2m}%</p>
+ <p>Precipitation: ${data.value.current.precipitation}mm</p>
+ `;
+  } catch (error) {
+    weather.innerHTML = `<p>An error occurred while fetching the weather: ${error}</p>`;
+  }
+};
+
+const getWeather = async (result: CityResult): Promise<WeatherResult> => {
+  try {
+    const response = await fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${result.latitude}&longitude=${result.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation&timezone=auto&forecast_days=1`,
-    ),
-    Effect.andThen(HttpClientResponse.schemaBodyJson(Weather)),
-    Effect.scoped,
-  );
-// Effect.gen(function* () {
-//   const response = yield* getRequest(
-//     `https://api.open-meteo.com/v1/forecast?latitude=${result.latitude}&longitude=${result.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation&timezone=auto&forecast_days=1`,
-//   );
-//
-//   return yield* HttpClientResponse.schemaBodyJson(Weather)(response);
-// }).pipe(Effect.scoped, Effect.provide(FetchHttpClient.layer));
+    );
+
+    const weather = await response.json();
+
+    return { tag: "ok", value: weather };
+  } catch (error) {
+    return { tag: "error", value: error };
+  }
+};
