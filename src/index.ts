@@ -10,10 +10,10 @@ type CityResult = {
 };
 
 type WeatherResult =
-  | { tag: "ok"; value: Weather }
+  | { tag: "ok"; value: WeatherResponse }
   | { tag: "error"; value: unknown };
 
-type Weather = {
+type WeatherResponse = {
   current_units: {
     temperature_2m: string;
     relative_humidity_2m: string;
