@@ -23,7 +23,7 @@ main {
   display: grid;
   grid-template-columns: 1fr 4fr;
   gap: 1rem;
-  height: 50vh;
+  height: 60vh;
   margin: 0 auto;
   border: 1px solid var(--border-color);
   background-color: rgb(255 255 255 / 0.8);
@@ -72,5 +72,5 @@ main {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-size: 1.5rem;
+  font-size: var(--font-size);
 }
