@@ -29,11 +29,11 @@ type Weather = {
 };
 
 // The field input
-const city = document.querySelector<HTMLInputElement>("#city");
+const cityElement = document.querySelector<HTMLInputElement>("#city");
 // The list of suggestions
-const cities = document.querySelector<HTMLUListElement>("#cities");
+const citiesElement = document.querySelector<HTMLUListElement>("#cities");
 // The weather information
-const weather = document.querySelector<HTMLDivElement>("#weather");
+const weatherElement = document.querySelector<HTMLDivElement>("#weather");
 
 const debounce = (fn: Function, delay: number) => {
   let timeoutId: number;
@@ -48,9 +48,9 @@ const getCities = debounce(async function (input: HTMLInputElement) {
   const { value } = input;
 
   // Check if the HTML element exists
-  if (cities) {
+  if (citiesElement) {
     // Clear the list of suggestions
-    cities.innerHTML = "";
+    citiesElement.innerHTML = "";
   }
 
   // Check if the input is empty
@@ -64,7 +64,7 @@ const getCities = debounce(async function (input: HTMLInputElement) {
   renderCity(results);
 }, 500);
 
-city?.addEventListener("input", function (_event) {
+cityElement?.addEventListener("input", function (_event) {
   getCities(this);
 });
 
@@ -96,9 +96,9 @@ const renderCity = (cities: CityResult[]) => {
 
   // If don't have a city, display an error message
   if (!cityResult) {
-    if (weather) {
-      const search = city?.value || "searched";
-      weather.innerHTML = `<p>City ${search} not found</p>`;
+    if (weatherElement) {
+      const search = cityElement?.value || "searched";
+      weatherElement.innerHTML = `<p>City ${search} not found</p>`;
     }
     return;
   }
@@ -112,12 +112,12 @@ const populateSuggestions = (results: CityResult[]) =>
     const li = document.createElement("li");
     li.innerText = `${city.name} - ${city.country_code}`;
     li.addEventListener("click", () => selectCity(city));
-    cities?.appendChild(li);
+    citiesElement?.appendChild(li);
   });
 
 const selectCity = async (result: CityResult) => {
   // If the HTML element doesn't exist, return
-  if (!weather) {
+  if (!weatherElement) {
     return;
   }
 
@@ -128,7 +128,7 @@ const selectCity = async (result: CityResult) => {
       throw data.value;
     }
 
-    weather.innerHTML = `
+    weatherElement.innerHTML = `
  <h2>${result.name}</h2>
  <p>Temperature: ${data.value.current.temperature_2m}°C</p>
  <p>Feels like: ${data.value.current.apparent_temperature}°C</p>
@@ -136,7 +136,7 @@ const selectCity = async (result: CityResult) => {
  <p>Precipitation: ${data.value.current.precipitation}mm</p>
  `;
   } catch (error) {
-    weather.innerHTML = `<p>An error occurred while fetching the weather: ${error}</p>`;
+    weatherElement.innerHTML = `<p>An error occurred while fetching the weather: ${error}</p>`;
   }
 };
 
