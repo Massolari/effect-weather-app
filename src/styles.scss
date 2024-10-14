@@ -1,34 +1,67 @@
+* {
+  --font-size: 1.175rem;
+  --border-color: #94a3b833;
+  --spacing: 0.5rem;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  height: 100vh;
+  font-family: "Open Sans", sans-serif;
+  font-optical-sizing: auto;
+  background-color: #0093e9;
+  background-image: linear-gradient(160deg, #0093e9 0%, #80d0c7 100%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  color: #374151;
+}
+
 main {
-  width: 100%;
+  width: 50%;
   display: grid;
   grid-template-columns: 1fr 4fr;
   gap: 1rem;
-  height: 100vh;
+  height: 50vh;
+  margin: 0 auto;
+  border: 1px solid var(--border-color);
+  background-color: rgb(255 255 255 / 0.8);
+  border-radius: var(--spacing);
+  font-size: var(--font-size);
 }
 
 .city-selector {
-  border-right: 1px solid #000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  border-right: 1px solid var(--border-color);
+  margin: 1.5rem;
+  padding-right: 1.5rem;
 
   input {
-    font-size: 1.175rem;
-    border-radius: 0.5rem;
-    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    font-size: var(--font-size);
+    font-family: inherit;
+    border-radius: var(--spacing);
+    padding: var(--spacing);
+
+    &:focus {
+      outline: none;
+      border-color: #80d0c7;
+    }
   }
 
   ul {
-    width: 80%;
+    width: 100%;
+    padding: var(--spacing) 0;
+    margin: 0;
 
     li {
       list-style: none;
-      padding: 0.5rem;
+      padding: var(--spacing);
       cursor: pointer;
       transition: background-color 0.3s;
 
       &:hover {
-        background-color: #f0f0f0;
+        background-color: #80d0c7;
       }
     }
   }
