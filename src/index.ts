@@ -61,7 +61,7 @@ const getCities = debounce(async function (input: HTMLInputElement) {
   // Fetch the cities
   const results = await getCity(value);
 
-  renderCity(results);
+  renderCitySuggestions(results);
 }, 500);
 
 cityElement?.addEventListener("input", function (_event) {
@@ -83,7 +83,7 @@ const getCity = async (city: string): Promise<CityResult[]> => {
   }
 };
 
-const renderCity = (cities: CityResult[]) => {
+const renderCitySuggestions = (cities: CityResult[]) => {
   // If there are multiple cities, populate the suggestions
   if (cities.length > 1) {
     populateSuggestions(cities);
