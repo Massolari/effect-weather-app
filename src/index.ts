@@ -1,3 +1,5 @@
+import { debounce } from "lodash";
+
 type GeocodingResponse = {
   results: CityResponse[];
 };
@@ -34,15 +36,6 @@ const cityElement = document.querySelector<HTMLInputElement>("#city");
 const citiesElement = document.querySelector<HTMLUListElement>("#cities");
 // The weather information
 const weatherElement = document.querySelector<HTMLDivElement>("#weather");
-
-const debounce = (fn: Function, delay: number) => {
-  let timeoutId: number;
-
-  return function (...args: any[]) {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), delay);
-  };
-};
 
 const getCities = debounce(async function (input: HTMLInputElement) {
   const { value } = input;
