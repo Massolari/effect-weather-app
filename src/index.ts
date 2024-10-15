@@ -1,8 +1,8 @@
 type GeocodingResponse = {
-  results: CityResult[];
+  results: CityResponse[];
 };
 
-type CityResult = {
+type CityResponse = {
   name: string;
   country_code: string;
   latitude: number;
@@ -68,7 +68,7 @@ cityElement?.addEventListener("input", function (_event) {
   getCities(this);
 });
 
-const getCity = async (city: string): Promise<CityResult[]> => {
+const getCity = async (city: string): Promise<CityResponse[]> => {
   try {
     const response = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=10&language=en&format=json`,
@@ -83,7 +83,7 @@ const getCity = async (city: string): Promise<CityResult[]> => {
   }
 };
 
-const renderCitySuggestions = (cities: CityResult[]) => {
+const renderCitySuggestions = (cities: CityResponse[]) => {
   // If there are multiple cities, populate the suggestions
   if (cities.length > 1) {
     populateSuggestions(cities);
@@ -107,7 +107,7 @@ const renderCitySuggestions = (cities: CityResult[]) => {
   selectCity(cityResult);
 };
 
-const populateSuggestions = (results: CityResult[]) =>
+const populateSuggestions = (results: CityResponse[]) =>
   results.forEach((city) => {
     const li = document.createElement("li");
     li.innerText = `${city.name} - ${city.country_code}`;
@@ -115,7 +115,7 @@ const populateSuggestions = (results: CityResult[]) =>
     citiesElement?.appendChild(li);
   });
 
-const selectCity = async (result: CityResult) => {
+const selectCity = async (result: CityResponse) => {
   // If the HTML element doesn't exist, return
   if (!weatherElement) {
     return;
@@ -140,7 +140,7 @@ const selectCity = async (result: CityResult) => {
   }
 };
 
-const getWeather = async (result: CityResult): Promise<WeatherResult> => {
+const getWeather = async (result: CityResponse): Promise<WeatherResult> => {
   try {
     const response = await fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${result.latitude}&longitude=${result.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation&timezone=auto&forecast_days=1`,
