@@ -1,34 +1,41 @@
+import { z } from "zod";
 import { debounce } from "lodash";
 
-type GeocodingResponse = {
-  results: CityResponse[];
-};
+const CityResponse = z.object({
+  name: z.string(),
+  country_code: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
+});
 
-type CityResponse = {
-  name: string;
-  country_code: string;
-  latitude: number;
-  longitude: number;
-};
+type CityResponse = z.infer<typeof CityResponse>;
+
+const GeocodingResponse = z.object({
+  results: z.array(CityResponse),
+});
+
+type GeocodingResponse = z.infer<typeof GeocodingResponse>;
 
 type WeatherResult =
   | { tag: "ok"; value: WeatherResponse }
   | { tag: "error"; value: unknown };
 
-type WeatherResponse = {
-  current_units: {
-    temperature_2m: string;
-    relative_humidity_2m: string;
-    apparent_temperature: string;
-    precipitation: string;
-  };
-  current: {
-    temperature_2m: number;
-    relative_humidity_2m: number;
-    apparent_temperature: number;
-    precipitation: number;
-  };
-};
+const WeatherResponse = z.object({
+  current_units: z.object({
+    temperature_2m: z.string(),
+    relative_humidity_2m: z.string(),
+    apparent_temperature: z.string(),
+    precipitation: z.string(),
+  }),
+  current: z.object({
+    temperature_2m: z.number(),
+    relative_humidity_2m: z.number(),
+    apparent_temperature: z.number(),
+    precipitation: z.number(),
+  }),
+});
+
+type WeatherResponse = z.infer<typeof WeatherResponse>;
 
 // The field input
 const cityElement = document.querySelector<HTMLInputElement>("#city");
@@ -67,9 +74,14 @@ const getCity = async (city: string): Promise<CityResponse[]> => {
       `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=10&language=en&format=json`,
     );
 
-    const geocoding: GeocodingResponse = await response.json();
+    const geocoding = await response.json();
+    const parsedGeocoding = GeocodingResponse.safeParse(geocoding);
 
-    return geocoding.results;
+    if (!parsedGeocoding.success) {
+      return [];
+    }
+
+    return parsedGeocoding.data.results;
   } catch (error) {
     console.error("Error:", error);
     return [];
@@ -140,8 +152,13 @@ const getWeather = async (result: CityResponse): Promise<WeatherResult> => {
     );
 
     const weather = await response.json();
+    const parsedWeather = WeatherResponse.safeParse(weather);
 
-    return { tag: "ok", value: weather };
+    if (!parsedWeather.success) {
+      return { tag: "error", value: parsedWeather.error };
+    }
+
+    return { tag: "ok", value: parsedWeather.data };
   } catch (error) {
     return { tag: "error", value: error };
   }
