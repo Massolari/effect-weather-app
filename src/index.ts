@@ -6,17 +6,17 @@ import {
   HttpClientResponse,
 } from "@effect/platform";
 
-const CityResult = Schema.Struct({
+const CityResponse = Schema.Struct({
   name: Schema.String,
-  country_code: Schema.String,
+  country_code: Schema.String.pipe(Schema.length(2)),
   latitude: Schema.Number,
   longitude: Schema.Number,
 });
 
-type CityResult = Schema.Schema.Type<typeof CityResult>;
+type CityResult = Schema.Schema.Type<typeof CityResponse>;
 
 const GeocodingResponse = Schema.Struct({
-  results: Schema.Array(CityResult),
+  results: Schema.Array(CityResponse),
 });
 
 type GeocodingResponse = Schema.Schema.Type<typeof GeocodingResponse>;
