@@ -3,7 +3,7 @@ import { debounce } from "lodash";
 
 const CityResponse = z.object({
   name: z.string(),
-  country_code: z.string(),
+  country_code: z.string().length(2),
   latitude: z.number(),
   longitude: z.number(),
 });
