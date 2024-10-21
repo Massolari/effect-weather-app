@@ -133,12 +133,14 @@ const selectCity = async (result: CityResponse) => {
       throw data.value;
     }
 
+    const { temperature_2m, apparent_temperature, relative_humidity_2m, precipitation } = data.value.current;
+
     weatherElement.innerHTML = `
  <h2>${result.name}</h2>
- <p>Temperature: ${data.value.current.temperature_2m}°C</p>
- <p>Feels like: ${data.value.current.apparent_temperature}°C</p>
- <p>Humidity: ${data.value.current.relative_humidity_2m}%</p>
- <p>Precipitation: ${data.value.current.precipitation}mm</p>
+ <p>Temperature: ${temperature_2m}°C</p>
+ <p>Feels like: ${apparent_temperature}°C</p>
+ <p>Humidity: ${relative_humidity_2m}%</p>
+ <p>Precipitation: ${precipitation}mm</p>
  `;
   } catch (error) {
     weatherElement.innerHTML = `<p>An error occurred while fetching the weather: ${error}</p>`;
