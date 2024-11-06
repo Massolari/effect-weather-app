@@ -89,27 +89,17 @@ const getCity = async (city: string): Promise<CityResponse[]> => {
 };
 
 const renderCitySuggestions = (cities: CityResponse[]) => {
-  // If there are multiple cities, populate the suggestions
-  if (cities.length > 1) {
+  // If there are cities, populate the suggestions
+  if (cities.length > 0) {
     populateSuggestions(cities);
     return;
   }
 
-  // We didn't get into the if statement above, so we have only one city or none
-  // Let's try to get the first city
-  const cityResult = cities.at(0);
-
-  // If don't have a city, display an error message
-  if (!cityResult) {
-    if (weatherElement) {
-      const search = cityElement?.value || "searched";
-      weatherElement.innerHTML = `<p>City ${search} not found</p>`;
-    }
-    return;
+  // Otherwise, show a message that the city was not found
+  if (weatherElement) {
+    const search = cityElement?.value || "searched";
+    weatherElement.innerHTML = `<p>City ${search} not found</p>`;
   }
-
-  // Fetch the weather for the selected city
-  selectCity(cityResult);
 };
 
 const populateSuggestions = (results: CityResponse[]) =>
@@ -133,7 +123,12 @@ const selectCity = async (result: CityResponse) => {
       throw data.value;
     }
 
-    const { temperature_2m, apparent_temperature, relative_humidity_2m, precipitation } = data.value.current;
+    const {
+      temperature_2m,
+      apparent_temperature,
+      relative_humidity_2m,
+      precipitation,
+    } = data.value.current;
 
     weatherElement.innerHTML = `
  <h2>${result.name}</h2>
